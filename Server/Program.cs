@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System.ComponentModel;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -33,12 +34,15 @@ namespace Server
             socket.Bind(listenEndPoint); //socket에 주소(랜카드, 포트)를 연결
             socket.Listen(10); //이제 들어오는 정보를 듣고거다. 몇개까지?
 
+        
+
             while (true)
             {
                 //동기 방식
                 Socket clientSocket = socket.Accept(); //손놈과 연결된 소켓 - 여기 포트번호는 랜덤으로 설정되어있음
 
                 byte[] receiveBuffer = new byte[1024];
+                //OS 내부에 버퍼에서 복사해오는데, 자료 전부 가져오는게 아님
                 int recvLength = clientSocket.Receive(receiveBuffer); //받으면 길이부터 줌
                 if (recvLength == 0)
                 {
@@ -49,14 +53,24 @@ namespace Server
 
                     //에러
                 }
-                string resMsgStr = Encoding.UTF8.GetString(receiveBuffer);
-                Messege resMsg = JsonConvert.DeserializeObject<Messege>(resMsgStr);
-                Console.WriteLine($"클라가 보낸 메시지{resMsg.msg}");
 
-                Messege sendMsg = new Messege("반가워요");
-                string sendJson = JsonConvert.SerializeObject(sendMsg);
-                byte[] sendData = Encoding.UTF8.GetBytes(sendJson);
+                //이미지 파일 가져오기
+
+                //이미지 바이트로 읽기
+                byte[] readFile = File.ReadAllBytes("1.webp");
+                
+                File.WriteAllBytes("4.webp", readFile);
+
+
+                 
+                byte[] numFile = BitConverter.GetBytes(readFile.Length);
+                byte[] sendData = numFile.Concat(readFile).ToArray();
+                int convertLength = BitConverter.ToInt32(numFile);
+
                 int sendLength = clientSocket.Send(sendData);
+           
+       
+                Console.WriteLine("보낸 길이 "+sendLength);
                 //sendLength가 0 이면 상대쪽이 끊은거
                 //0 아래면 어딘진 몰라도 에러
 
