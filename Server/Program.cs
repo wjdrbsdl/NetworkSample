@@ -43,34 +43,32 @@ namespace Server
 
                 byte[] receiveBuffer = new byte[1024];
                 //OS 내부에 버퍼에서 복사해오는데, 자료 전부 가져오는게 아님
-                int recvLength = clientSocket.Receive(receiveBuffer); //받으면 길이부터 줌
-                if (recvLength == 0)
-                {
-                    //닫은거
-                }
-                else if (recvLength < 0)
-                {
 
-                    //에러
-                }
+                ///받기
+                //먼저 길이 부터 받음
+                byte[] lengthBuffer = new byte[2];
+                int recvLength = clientSocket.Receive(lengthBuffer, 2, SocketFlags.None);
+                //바이트로 넘어온 데이터를 메시지 길이 인트로 변환
+                int recvMsgLength = BitConverter.ToInt16(lengthBuffer, 0);
 
-                //이미지 파일 가져오기
-
-                //이미지 바이트로 읽기
-                byte[] readFile = File.ReadAllBytes("1.webp");
-                
-                File.WriteAllBytes("4.webp", readFile);
+                byte[] recvBuff = new byte[1000];
+                int recv = clientSocket.Receive(recvBuff, recvMsgLength, SocketFlags.None);
+                string recvMsg = Encoding.UTF8.GetString(recvBuff);
+                Console.WriteLine(recvMsg);
 
 
-                 
-                byte[] numFile = BitConverter.GetBytes(readFile.Length);
-                byte[] sendData = numFile.Concat(readFile).ToArray();
-                int convertLength = BitConverter.ToInt32(numFile);
+                //보내기
+                string sendMsgStr = "보내본다.";
+                byte[] msgBuffer = Encoding.UTF8.GetBytes(sendMsgStr); //메시지 바이트로 만들고
+                ushort msgLength = (ushort)msgBuffer.Length;
+                byte[] sendLengthBuff = new byte[2];
+                sendLengthBuff = BitConverter.GetBytes(msgLength); //길이를 버퍼에 담아놓음
 
-                int sendLength = clientSocket.Send(sendData);
-           
-       
-                Console.WriteLine("보낸 길이 "+sendLength);
+                byte[] packet = new byte[sendLengthBuff.Length + msgBuffer.Length];
+                Buffer.BlockCopy(sendLengthBuff, 0, packet, 0, sendLengthBuff.Length);
+                Buffer.BlockCopy(msgBuffer, 0, packet, sendLengthBuff.Length, msgBuffer.Length);
+
+                clientSocket.Send(packet);
                 //sendLength가 0 이면 상대쪽이 끊은거
                 //0 아래면 어딘진 몰라도 에러
 

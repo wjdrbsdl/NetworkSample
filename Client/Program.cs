@@ -28,6 +28,8 @@ namespace Client
     {
         static void Main(string[] args)
         {
+           
+
             //서버에 붙을 소켓
             for (int i = 0; i < 1; i++)
             {
@@ -35,45 +37,37 @@ namespace Client
                 IPEndPoint endPoint = new IPEndPoint(IPAddress.Loopback, 4000);
                 serverSocket.Connect(endPoint);
 
-                string jsonMessge = "{\"키\" : \"값\"}";
                 Messege clientMsg = new Messege("안녕하세요");
                 string json = JsonConvert.SerializeObject(clientMsg);
-                byte[] sendBuff = Encoding.UTF8.GetBytes(json);
-                int sendLength = serverSocket.Send(sendBuff);
-                //Console.WriteLine("보낸 길이 " + sendLength);
+                //// 패킷 만들기
+                byte[] sendMsg = Encoding.UTF8.GetBytes(json);
+                ushort msgLength = (ushort)sendMsg.Length;
+                //길이  자료
+                //[][] [][][][][]
+                byte[] lengthBuffer = new byte[2];
+                lengthBuffer = BitConverter.GetBytes(msgLength); //랭스 길이를 바이트로 변환해놓기 2자릿수.
+                byte[] sendBuffer = new byte[lengthBuffer.Length + sendMsg.Length]; //메시지 길이 + 메시지 자료
 
+                Buffer.BlockCopy(lengthBuffer, 0, sendBuffer, 0, 2);
+                Buffer.BlockCopy(sendMsg, 0, sendBuffer, 2, msgLength);
+                ////
                 
-                //이미지 파일 바이트로 받음
-                byte[] recvBuff = new byte[100];
-                int recvLength = serverSocket.Receive(recvBuff);
-                int imageLength = BitConverter.ToInt32(recvBuff, 0); //이미지 데이터 길이
-                byte[] fiBuff = new byte[imageLength]; //이미지 총 길이로 버프 생성
-                int copyPoint = 0;
-                //길이 알려주던 4 바이트 빼서 진행
-                Array.Copy(recvBuff, 4, fiBuff, copyPoint, recvLength-4);
-                copyPoint += recvLength - 4;
-                //전달받은 크기를 다 받을때까지 루프 
-                while (copyPoint < imageLength)
-                {
-                    byte[] rereBuff = new byte[100];
-                    int rere = serverSocket.Receive(rereBuff);
-                    Array.Copy(rereBuff, 0, fiBuff, copyPoint, rere);
-                    copyPoint += rere;
-                }
+                //패킷 전송하기
+                int sendLength = serverSocket.Send(sendBuffer, sendBuffer.Length, SocketFlags.None);
 
-                File.WriteAllBytes("5.webp", fiBuff);
+                ///받기
+                int recvLength = serverSocket.Receive(lengthBuffer, 2, SocketFlags.None);
+                //바이트로 넘어온 데이터를 메시지 길이 인트로 변환
+                ushort recvMsgLength = (ushort)BitConverter.ToInt16(lengthBuffer, 0);
 
-
+                byte[] recvBuff = new byte[4096];
+                int recv = serverSocket.Receive(recvBuff, recvMsgLength, SocketFlags.None);
+                string recvMsg = Encoding.UTF8.GetString(recvBuff);
+                Console.WriteLine(recvMsg);
                 serverSocket.Close();
 
-
-                ///*
-                // */
-                //string jsonStr = "FFF";
-                //JObject jsonTest = JObject.Parse(jsonStr);
-                //JObject answer = new JObject();
-                //answer.Add("키", "메시지");
             }
+
         }
     }
 }
