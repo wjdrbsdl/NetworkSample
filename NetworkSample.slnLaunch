@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "새 프로필",
+    "Projects": [
+      {
+        "Path": "LoginServer\\LoginServer.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "LoginClient\\LoginClient.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
